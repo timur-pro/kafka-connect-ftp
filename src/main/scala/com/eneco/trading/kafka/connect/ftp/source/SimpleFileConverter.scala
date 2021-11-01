@@ -1,13 +1,12 @@
 package com.eneco.trading.kafka.connect.ftp.source
 
 import java.util
-
 import com.eneco.trading.kafka.connect.ftp.source.SourceRecordProducers.SourceRecordProducer
 import org.apache.kafka.connect.data.{Schema, SchemaBuilder, Struct}
 import org.apache.kafka.connect.source.SourceRecord
 import org.apache.kafka.connect.storage.OffsetStorageReader
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
   * Simple file converter. Writes the complete file into a single record
@@ -18,15 +17,15 @@ class SimpleFileConverter(props: util.Map[String, String], offsetStorageReader :
 
   val cfg = new FtpSourceConfig(props)
   val metaStore = new ConnectFileMetaDataStore(offsetStorageReader)
-  val recordConverter: SourceRecordConverter = cfg.sourceRecordConverter
-  val recordMaker:SourceRecordProducer = cfg.keyStyle match {
+  val recordConverter: SourceRecordConverter = cfg.sourceRecordConverter()
+  val recordMaker:SourceRecordProducer = cfg.keyStyle() match {
     case KeyStyle.String => SourceRecordProducers.stringKeyRecord
     case KeyStyle.Struct => SourceRecordProducers.structKeyRecord
   }
 
   override def convert(topic: String, meta: FileMetaData, body: FileBody): Seq[SourceRecord] = {
     metaStore.set(meta.attribs.path, meta)
-    recordConverter.convert(recordMaker(metaStore, topic, meta, body)).asScala
+    recordConverter.convert(recordMaker(metaStore, topic, meta, body)).asScala.toSeq
   }
 
   override def getFileOffset(path: String): Option[FileMetaData] = metaStore.get(path)
@@ -35,7 +34,7 @@ class SimpleFileConverter(props: util.Map[String, String], offsetStorageReader :
 object SourceRecordProducers {
   type SourceRecordProducer = (ConnectFileMetaDataStore, String, FileMetaData, FileBody) => SourceRecord
 
-  val fileInfoSchema = SchemaBuilder.struct().name("com.eneco.trading.kafka.connect.ftp.FileInfo")
+  val fileInfoSchema: Schema = SchemaBuilder.struct().name("com.eneco.trading.kafka.connect.ftp.FileInfo")
     .field("name", Schema.STRING_SCHEMA)
     .field("offset", Schema.INT64_SCHEMA)
     .build()

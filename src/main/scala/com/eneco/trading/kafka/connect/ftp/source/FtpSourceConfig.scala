@@ -5,7 +5,7 @@ import java.util
 import org.apache.kafka.common.config.ConfigDef.{Importance, Type}
 import org.apache.kafka.common.config.{AbstractConfig, ConfigDef}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 case class MonitorConfig(topic:String, path:String, tail:Boolean)
 
@@ -54,8 +54,13 @@ class FtpSourceConfig(props: util.Map[String, String])
   // don't leak our ugly config!
   def ftpMonitorConfigs(): Seq[MonitorConfig] = {
     lazy val topicPathRegex = "([^:]*):(.*)".r
-    getList(FtpSourceConfig.MonitorTail).asScala.map { case topicPathRegex(path, topic) => MonitorConfig(topic, path, tail = true) } ++
-      getList(FtpSourceConfig.MonitorUpdate).asScala.map { case topicPathRegex(path, topic) => MonitorConfig(topic, path, tail = false) }
+    (getList(FtpSourceConfig.MonitorTail).asScala.map {
+      case topicPathRegex(path, topic) => MonitorConfig(topic, path, tail = true)
+    } ++
+      getList(FtpSourceConfig.MonitorUpdate).asScala.map {
+        case topicPathRegex(path, topic) => MonitorConfig(topic, path, tail = false)
+      })
+      .toSeq
   }
 
   def address(): (String, Option[Int]) = {

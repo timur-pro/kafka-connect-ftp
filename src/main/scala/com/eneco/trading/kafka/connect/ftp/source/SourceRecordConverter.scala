@@ -4,7 +4,7 @@ import java.util
 
 import org.apache.kafka.common.Configurable
 import org.apache.kafka.connect.source.SourceRecord
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 trait SourceRecordConverter extends Configurable {
   def convert(in:SourceRecord) : java.util.List[SourceRecord]

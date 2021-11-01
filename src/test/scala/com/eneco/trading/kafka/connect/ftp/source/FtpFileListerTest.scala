@@ -1,29 +1,31 @@
 package com.eneco.trading.kafka.connect.ftp.source
 
-import com.typesafe.scalalogging.slf4j.StrictLogging
+import com.typesafe.scalalogging.StrictLogging
 import org.apache.commons.net.ftp.{FTPClient, FTPFile}
-import org.scalatest.mockito.MockitoSugar
 import org.mockito.Mockito._
-import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.matchers.should._
+import org.scalatest.BeforeAndAfter
+import org.scalatest.funsuite.AnyFunSuite
 
 /**
   * Created by jhofman on 13/03/2017.
   */
-class FtpFileListerTest extends FunSuite with Matchers with BeforeAndAfter with StrictLogging with MockitoSugar {
+class FtpFileListerTest extends AnyFunSuite with Matchers with BeforeAndAfter with StrictLogging with MockitoSugar {
 
-  def mockFile(name: String) = {
+  def mockFile(name: String): FTPFile = {
     val f = mock[FTPFile]
     when(f.isFile).thenReturn(true)
     when(f.isDirectory).thenReturn(false)
-    when(f.getName()).thenReturn(name)
+    when(f.getName).thenReturn(name)
     f
   }
 
-  def mockDir(name: String) = {
+  def mockDir(name: String): FTPFile = {
     val f = mock[FTPFile]
     when(f.isFile).thenReturn(false)
     when(f.isDirectory).thenReturn(true)
-    when(f.getName()).thenReturn(name)
+    when(f.getName).thenReturn(name)
     f
   }
 

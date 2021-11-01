@@ -1,11 +1,8 @@
 package com.eneco.trading.kafka.connect.ftp.source
 
-import java.nio.file.Path
-import java.util
-
 import better.files._
 import com.eneco.trading.kafka.connect.ftp.source.KeyStyle.KeyStyle
-import com.typesafe.scalalogging.slf4j.StrictLogging
+import com.typesafe.scalalogging.StrictLogging
 import org.apache.ftpserver.listener.ListenerFactory
 import org.apache.ftpserver.usermanager.PropertiesUserManagerFactory
 import org.apache.ftpserver.usermanager.impl.BaseUser
@@ -13,9 +10,13 @@ import org.apache.ftpserver.{FtpServer, FtpServerFactory}
 import org.apache.kafka.connect.data.Struct
 import org.apache.kafka.connect.source.SourceRecord
 import org.apache.kafka.connect.storage.OffsetStorageReader
-import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
+import org.scalatest.BeforeAndAfter
+import org.scalatest.matchers.should._
+import org.scalatest.funsuite.AnyFunSuite
 
-import scala.collection.JavaConverters._
+import java.nio.file.Path
+import java.util
+import scala.jdk.CollectionConverters._
 
 // TODO: to be done for more advanced tests
 class DummyOffsetStorage extends OffsetStorageReader {
@@ -98,7 +99,7 @@ class FileSystem(rootDir:Path) {
 }
 
 // spins up an embedded ftp server, updates files, uses FtpSourcePoller to obtain SourceRecords which are verified
-class EndToEndTests extends FunSuite with Matchers with BeforeAndAfter with StrictLogging {
+class EndToEndTests extends AnyFunSuite with Matchers with BeforeAndAfter with StrictLogging {
   val sEmpty = new Array[Byte](0)
   val s0 = (0 to 255).map(_.toByte).toArray
   val s1 = "Hebban olla vogala nestas hagunnan hinase hic enda thu wat unbidan we nu\r\n\t\u0000:)".getBytes
@@ -167,7 +168,7 @@ class EndToEndTests extends FunSuite with Matchers with BeforeAndAfter with Stri
   val fileToTopic = Map(t0 -> "tails", t1 -> "tails", u0 -> "updates", u1 -> "updates")
 
   test("Happy flow: file updates are properly reflected by corresponding SourceRecords with structured keys") {
-    val fs = new FileSystem(server.rootDir).clear
+    val fs = new FileSystem(server.rootDir).clear()
     server.start()
 
     val cfg = new FtpSourceConfig(defaultConfig.updated(FtpSourceConfig.KeyStyle,"struct").asJava)
@@ -185,7 +186,7 @@ class EndToEndTests extends FunSuite with Matchers with BeforeAndAfter with Stri
   }
 
   test("Happy flow: file updates are properly reflected by corresponding SourceRecords with stringed keys") {
-    val fs = new FileSystem(server.rootDir).clear
+    val fs = new FileSystem(server.rootDir).clear()
     server.start()
 
     val cfg = new FtpSourceConfig(defaultConfig.updated(FtpSourceConfig.KeyStyle,"string").asJava)
@@ -204,7 +205,7 @@ class EndToEndTests extends FunSuite with Matchers with BeforeAndAfter with Stri
 
   test("Streaming flow: files are only fetched when the records are polled") {
     logger.info("Start test")
-    val fs = new FileSystem(server.rootDir).clear
+    val fs = new FileSystem(server.rootDir).clear()
     server.start()
 
     val cfg = new FtpSourceConfig(

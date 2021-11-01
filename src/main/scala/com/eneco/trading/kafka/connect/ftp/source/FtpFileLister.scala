@@ -3,7 +3,7 @@ package com.eneco.trading.kafka.connect.ftp.source
 import java.nio.file.{FileSystems, Paths}
 import java.time.{Duration, Instant}
 
-import com.typesafe.scalalogging.slf4j.StrictLogging
+import com.typesafe.scalalogging.StrictLogging
 import org.apache.commons.net.ftp.{FTPClient, FTPFile}
 
 // org.apache.commons.net.ftp.FTPFile only contains the relative path
@@ -11,8 +11,8 @@ case class AbsoluteFtpFile(ftpFile:FTPFile, parentDir:String) {
   def name() = ftpFile.getName
   def size() = ftpFile.getSize
   def timestamp() = ftpFile.getTimestamp.toInstant
-  def path() = Paths.get(parentDir, name).toString
-  def age(): Duration = Duration.between(timestamp, Instant.now)
+  def path() = Paths.get(parentDir, name()).toString
+  def age(): Duration = Duration.between(timestamp(), Instant.now)
 }
 
 case class FtpFileLister(ftp: FTPClient) extends StrictLogging {

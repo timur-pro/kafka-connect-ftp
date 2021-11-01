@@ -5,7 +5,7 @@ import java.nio.file.{FileSystems, Paths}
 import java.time.{Duration, Instant}
 import java.util
 
-import com.typesafe.scalalogging.slf4j.StrictLogging
+import com.typesafe.scalalogging.StrictLogging
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.net.ftp.{FTP, FTPClient, FTPFile, FTPReply}
 import org.apache.commons.net.{ProtocolCommandEvent, ProtocolCommandListener}
@@ -33,13 +33,13 @@ class FtpMonitor(settings:FtpMonitorSettings, fileConverter: FileConverter) exte
   val ftp = new FTPClient()
 
   def requiresFetch(file: AbsoluteFtpFile, metadata: Option[FileMetaData]): Boolean = metadata match {
-    case None => logger.debug(s"${file.name} hasn't been seen before"); true
+    case None => logger.debug(s"${file.name()} hasn't been seen before"); true
     case Some(known) if known.attribs.size != file.ftpFile.getSize => {
-      logger.debug(s"${file.name} size changed ${known.attribs.size} => ${file.size}")
+      logger.debug(s"${file.name()} size changed ${known.attribs.size} => ${file.size()}")
       true
     }
-    case Some(known) if known.attribs.timestamp != file.timestamp => {
-      logger.debug(s"${file.name} is newer ${known.attribs.timestamp} => ${file.timestamp}")
+    case Some(known) if known.attribs.timestamp != file.timestamp() => {
+      logger.debug(s"${file.name()} is newer ${known.attribs.timestamp} => ${file.timestamp()}")
       true
     }
     case _ => false
@@ -47,21 +47,21 @@ class FtpMonitor(settings:FtpMonitorSettings, fileConverter: FileConverter) exte
 
   // Retrieves the FtpAbsoluteFile and returns a new or updated KnownFile
   def fetch(file: AbsoluteFtpFile, prevFetch: Option[FileMetaData]): Option[(Option[FileMetaData], FetchedFile)] = {
-    logger.info(s"fetching ${file.path}")
+    logger.info(s"fetching ${file.path()}")
     val baos = new ByteArrayOutputStream()
 
-    if (ftp.retrieveFile(file.path, baos)) {
+    if (ftp.retrieveFile(file.path(), baos)) {
       val bytes = baos.toByteArray
       baos.close()
       val hash = DigestUtils.sha256Hex(bytes)
-      val attributes = new FileAttributes(file.path, file.ftpFile.getSize, file.ftpFile.getTimestamp.toInstant)
+      val attributes = new FileAttributes(file.path(), file.ftpFile.getSize, file.ftpFile.getTimestamp.toInstant)
       val meta = prevFetch match {
         case None => FileMetaData(attributes, hash, Instant.now, Instant.now, Instant.now)
         case Some(old) => FileMetaData(attributes, hash, old.firstFetched, old.lastModified, Instant.now)
       }
       Option(prevFetch, FetchedFile(meta, bytes))
     } else {
-      logger.warn(s"failed to fetch ${file.path}: ${ftp.getReplyString}")
+      logger.warn(s"failed to fetch ${file.path()}: ${ftp.getReplyString}")
       None
     }
   }
@@ -106,13 +106,13 @@ class FtpMonitor(settings:FtpMonitorSettings, fileConverter: FileConverter) exte
 
 
   // fetches files from a monitored directory when needed
-  def fetchFromMonitoredPlaces(w:MonitoredPath): Stream[(FileMetaData, FileBody)] = {
-    val files = FtpFileLister(ftp).listFiles(w.p.toString).filter(f => !MaxAge.minus(f.age).isNegative)
+  def fetchFromMonitoredPlaces(w:MonitoredPath): LazyList[(FileMetaData, FileBody)] = {
+    val files = FtpFileLister(ftp).listFiles(w.p.toString).filter(f => !MaxAge.minus(f.age()).isNegative)
     logger.info(s"Found ${files.length} items in ${w.p}")
 
-    files.toStream
+    files.to(LazyList)
       // Get the metadata from the offset store
-      .map(file => (file , fileConverter.getFileOffset(file.path)))
+      .map(file => (file , fileConverter.getFileOffset(file.path())))
       // Filter out the files that do not need to be fetched
       .filter{ case (file, offset) => requiresFetch(file, offset) }
       // Fetch the latest file contents
@@ -161,9 +161,9 @@ class FtpMonitor(settings:FtpMonitorSettings, fileConverter: FileConverter) exte
     Success(ftp)
   }
 
-  def poll(): Try[Stream[(FileMetaData, FileBody, MonitoredPath)]] = connectFtp() match {
+  def poll(): Try[LazyList[(FileMetaData, FileBody, MonitoredPath)]] = connectFtp() match {
       case Success(_) =>
-        Try(settings.directories.toStream.flatMap(dir =>
+        Try(settings.directories.to(LazyList).flatMap(dir =>
           fetchFromMonitoredPlaces(dir).map { case (meta, body) => (meta, body, dir) }))
       case Failure(err) => logger.warn(s"cannot connect to ftp: ${err.toString}")
         Failure(err)
