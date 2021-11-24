@@ -9,3 +9,4 @@ target/
 /.cache-tests
 /.gradle
 build/
+.bsp/
