@@ -72,7 +72,7 @@ class FtpSourceConfig(props: util.Map[String, String])
   def keyStyle(): KeyStyle = KeyStyle.values.find(_.toString.toLowerCase == getString(FtpSourceConfig.KeyStyle)).get
 
   def sourceRecordConverter(): SourceRecordConverter =
-    getConfiguredInstance(FtpSourceConfig.SourceRecordConverter, classOf[SourceRecordConverter])
+    getConfiguredInstance(FtpSourceConfig.SourceRecordConverter, classOf[SourceRecordConverter], originals)
 
   def fileConverter = getClass(FtpSourceConfig.FileConverter)
 
